@@ -1,8 +1,9 @@
 ﻿<div align="center">
 
-<img src="docs/assets/logo.svg" alt="Sushra AI logo" width="96" height="96" />
-
-# Sushra AI
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/wordmark-dark.png" />
+  <img src="docs/assets/wordmark-light.png" alt="Sushra AI" width="420" />
+</picture>
 
 **Health care you can talk to — in Telugu, Hindi and English.**
 
