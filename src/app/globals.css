@@ -1,0 +1,63 @@
+@import "tailwindcss" source(none);
+/* Scan only our source files (not dev.db, .next or folders above the project) */
+@source "../../src";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans Variable", "Noto Sans Telugu", "Noto Sans Devanagari", ui-sans-serif, system-ui, sans-serif;
+  --color-ink: #0e2338;
+  --color-ink-soft: #2f4357;
+  --color-muted: #5b6b7b;
+  --color-canvas: #faf8f4;
+  --color-cream: #f4f1ea;
+  --color-line: #e7e2d9;
+  --color-brand-50: #ecfdf7;
+  --color-brand-100: #d1faeb;
+  --color-brand-200: #a6f2d6;
+  --color-brand-300: #6ee5bd;
+  --color-brand-400: #34d1a0;
+  --color-brand-500: #12b386;
+  --color-brand-600: #0a936f;
+  --color-brand-700: #0a755b;
+  --color-brand-800: #0b5d4a;
+  --color-brand-900: #0a4c3e;
+  --color-good: #0a755b;
+  --color-warn: #a15c07;
+  --color-bad: #b4232a;
+  --shadow-soft: 0 1px 2px rgb(14 35 56 / 0.04), 0 8px 24px -12px rgb(14 35 56 / 0.12);
+  --shadow-glow: 0 0 0 6px rgb(52 209 160 / 0.15), 0 12px 32px -8px rgb(10 147 111 / 0.45);
+  --animate-pulse-ring: pulse-ring 1.6s ease-out infinite;
+  --animate-flash: flash 1.8s ease-out 1;
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgb(52 209 160 / 0.55); }
+    100% { box-shadow: 0 0 0 22px rgb(52 209 160 / 0); }
+  }
+  @keyframes flash {
+    0%, 30% { box-shadow: 0 0 0 4px rgb(52 209 160 / 0.6); background-color: rgb(209 250 235); }
+    100% { box-shadow: 0 0 0 0 rgb(52 209 160 / 0); }
+  }
+}
+
+html { font-size: 16px; background: var(--color-canvas); color: var(--color-ink); }
+html[data-text-scale="large"] { font-size: 18px; }
+html[data-text-scale="xlarge"] { font-size: 20px; }
+
+/* High-contrast mode: darker secondary text, stronger borders */
+html[data-contrast="high"] {
+  --color-muted: #1c2b3a;
+  --color-ink-soft: #0e2338;
+  --color-line: #0e2338;
+  --color-canvas: #ffffff;
+  --color-brand-600: #06614a;
+  --color-brand-700: #054d3b;
+}
+
+body { font-feature-settings: "ss01"; -webkit-font-smoothing: antialiased; line-height: 1.55; }
+
+:focus-visible { outline: 3px solid var(--color-brand-600); outline-offset: 2px; border-radius: 10px; }
+
+.skip-link { position: absolute; left: -9999px; top: 8px; z-index: 100; }
+.skip-link:focus { left: 8px; background: var(--color-ink); color: white; padding: 8px 14px; border-radius: 10px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}

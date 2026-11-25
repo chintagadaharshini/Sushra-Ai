@@ -1,0 +1,23 @@
+node_modules
+.next
+*.db
+*.db-journal
+.env
+src/generated
+test-results
+playwright-report
+e2e-results
+next-env.d.ts
+*.tsbuildinfo
+# Python environment
+.venv/
+__pycache__/
+*.py[cod]
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python cache
+.pytest_cache/

@@ -1,0 +1,213 @@
+// Sushra AI — data model
+// SQLite for zero-config demo. All string "enum" columns are validated in
+// application code (src/lib/domain.ts) so the schema ports cleanly to PostgreSQL
+// (swap provider + adapter and convert to native enums if desired).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  /// PATIENT | DOCTOR | ASHA
+  role         String   @default("PATIENT")
+  email        String   @unique
+  phone        String?  @unique
+  displayName  String
+  passwordHash String
+  isDemo       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  profile       PatientProfile?
+  doctorProfile DoctorProfile?
+  ashaProfile   AshaProfile?
+  preferences   UserPreference?
+  auditEvents  AuditEvent[]
+}
+
+/// Patient-reported / demographic information. Never holds Aadhaar, OTPs or ABHA credentials.
+model PatientProfile {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName         String
+  gender           String
+  yearOfBirth      Int
+  bloodGroup       String?
+  /// App-level health ID (e.g. "SU-7K2P9Q"). NOT an ABHA number.
+  healthId         String   @map("demoHealthId")
+  phoneMasked      String
+  state            String
+  city             String?
+  /// Set when an ASHA worker registered this patient (assisted registration)
+  registeredByUserId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  records          HealthRecord[]
+  appointments     Appointment[]
+  consents         ConsentRecord[]
+}
+
+/// Self-declared registration number; verification against the medical council is pending.
+model DoctorProfile {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName           String
+  registrationNumber String
+  specialization     String
+  facilityName       String
+  city               String
+  /// PENDING | VERIFIED
+  verificationStatus String   @default("PENDING")
+  createdAt          DateTime @default(now())
+}
+
+model AshaProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName  String
+  ashaId    String
+  village   String
+  district  String
+  phcName   String
+  createdAt DateTime @default(now())
+}
+
+model UserPreference {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  preferredLanguage String   @default("en") // en | hi | te
+  city              String   @default("Hyderabad")
+  textScale         String   @default("normal") // normal | large | xlarge
+  voiceResponses    Boolean  @default(true)
+  highContrast      Boolean  @default(false)
+  updatedAt         DateTime @updatedAt
+}
+
+model HealthRecord {
+  id                 String    @id @default(cuid())
+  patientId          String
+  patient            PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  /// LAB_REPORT | PRESCRIPTION | CONSULTATION | IMAGING | PATIENT_NOTE
+  recordType         String
+  /// e.g. "blood_test", "lipid", "diabetes", "thyroid", "chest_xray"
+  category           String
+  title              String
+  recordDate         DateTime
+  facilityName       String
+  /// CLINICIAN | LABORATORY | PATIENT
+  authorType         String
+  authorName         String
+  /// DEMO_SEED | PATIENT_ENTERED | ABDM_HIP (future)
+  source             String
+  /// DEMO_VERIFIED | UNVERIFIED | PATIENT_REPORTED
+  verificationStatus String
+  summary            String
+  /// Space-separated multilingual search keywords
+  keywords           String    @default("")
+  /// The doctor/ASHA user who entered this record, if entered in-app
+  authorUserId       String?
+  /// JSON string with type-specific details (diagnosis, medications, findings)
+  detailsJson        String    @default("{}")
+  createdAt          DateTime  @default(now())
+
+  labResults         LabResult[]
+
+  @@index([patientId, recordDate])
+}
+
+model LabResult {
+  id        String  @id @default(cuid())
+  recordId  String
+  record    HealthRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  testCode  String
+  testName  String
+  value     Float?
+  valueText String?
+  unit      String
+  /// Reference range exactly as provided by the (synthetic) laboratory
+  refLow    Float?
+  refHigh   Float?
+  refText   String?
+  sortOrder Int     @default(0)
+}
+
+model Facility {
+  id          String  @id @default(cuid())
+  name        String
+  /// HOSPITAL | CLINIC | PHC | DIAGNOSTIC_LAB | PHARMACY
+  facilityType String
+  ownership   String  // GOVERNMENT | PRIVATE
+  city        String
+  state       String
+  address     String
+  phone       String
+  services    String  // comma separated
+  openHours   String
+  isDemo      Boolean @default(true)
+
+  appointments Appointment[]
+}
+
+model Appointment {
+  id            String    @id @default(cuid())
+  patientId     String
+  patient       PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  facilityId    String
+  facility      Facility  @relation(fields: [facilityId], references: [id])
+  department    String
+  doctorName    String?
+  /// Only set for seeded demo appointments. A request is never auto-scheduled.
+  scheduledAt   DateTime?
+  preferredDate DateTime?
+  /// DEMO_SCHEDULED | DEMO_REQUESTED | CANCELLED
+  status        String
+  notes         String?
+  isDemo        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+}
+
+model ConsentRecord {
+  id          String   @id @default(cuid())
+  patientId   String
+  patient     PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  /// e.g. "CARE_ACCESS", "AI_REPORT_EXPLANATION", "SHARE_WITH_FACILITY"
+  purpose     String
+  /// Doctor/ASHA user who may view this patient's records (CARE_ACCESS)
+  grantedToUserId  String?
+  /// Who recorded the consent (the patient, or an ASHA during assisted registration)
+  recordedByUserId String?
+  scope       String
+  grantedTo   String
+  /// GRANTED | REVOKED
+  status      String
+  isDemo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime?
+
+  @@index([grantedToUserId, status])
+}
+
+/// Records WHAT happened, never raw transcripts or audio.
+model AuditEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String
+  entity    String?
+  entityId  String?
+  channel   String   // UI | VOICE
+  outcome   String   // SUCCESS | DENIED | FAILED
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
