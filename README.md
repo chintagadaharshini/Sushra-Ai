@@ -1,4 +1,4 @@
-<div align="center">
+﻿<div align="center">
 
 <img src="docs/assets/logo.svg" alt="Sushra AI logo" width="96" height="96" />
 
@@ -8,7 +8,7 @@
 
 A voice-first digital health platform for **patients**, **doctors** and **ASHA workers**, inspired by India's ABDM ecosystem.
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Open%20prototype-16a37f?style=for-the-badge)](PUBLIC_PROTOTYPE_URL)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Open%20prototype-16a37f?style=for-the-badge)](https://sushra-ai-6m5l.onrender.com)
 
 ![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
@@ -31,7 +31,7 @@ A voice-first digital health platform for **patients**, **doctors** and **ASHA w
 
 ## 🌐 Live Demo
 
-> ### ▶ Working prototype: **[PUBLIC_PROTOTYPE_URL](PUBLIC_PROTOTYPE_URL)**
+> ### ▶ Working prototype: **[https://sushra-ai-6m5l.onrender.com](https://sushra-ai-6m5l.onrender.com)**
 >
 > This is the deployed, working version of Sushra AI. Open it in **Chrome or Edge** (for voice input) and sign in with any [demo account below](#-demo-login-credentials).
 
@@ -107,7 +107,7 @@ All three roles use the **same voice assistant** (bottom-right button, or **Alt 
 </div>
 
 **How to log in**
-1. Open the [live prototype](PUBLIC_PROTOTYPE_URL) (or `http://localhost:3000` locally) and click **Sign in**.
+1. Open the [live prototype](https://sushra-ai-6m5l.onrender.com) (or `http://localhost:3000` locally) and click **Sign in**.
 2. Choose the role tab — **Patient**, **Doctor** or **ASHA worker**. The tab must match the account; picking the wrong one shows which role the account belongs to.
 3. Enter the email (or mobile number) and the password `Sushra@123`, then click **Sign in as …**.
 
