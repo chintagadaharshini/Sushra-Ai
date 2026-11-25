@@ -1,7 +1,7 @@
 # Known limitations
 
 ## Verified vs. unverified
-- **Verified in this build:** typecheck, production build, 111 unit tests, 21 Playwright tests in real Chrome
+- **Verified in this build:** typecheck, production build, 112 unit/integration tests, 21 Playwright tests in real Chrome
   (incl. registration for all three roles, doctor notes, ASHA visits/assisted registration, sharing and revoking),
   6 Python tests, and (previous build) a Studio-voice **loopback** run (Chrome → Next.js proxy → Pipecat SmallWebRTC → RTVI data
   channel → browser executor → result back to Python), with navigation, explanation, confirm-and-save and a rejected
