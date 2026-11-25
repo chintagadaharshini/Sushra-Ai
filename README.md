@@ -428,6 +428,10 @@ Today doctors type prescriptions manually (medicine, dose, frequency, duration).
 
 **Team**
 - **Chintagada Harshini** — [@chintagadaharshini](https://github.com/chintagadaharshini)
+- **Rakesh Kalluri** — [@Rocky132123](https://github.com/Rocky132123)
+- **Vishnu Priya Jami**
+- **Praneeth Patnala**
+- **Kanishk Ippili**
 <!-- Add the other team members here (name — role — GitHub link). -->
 
 **Built with** — [Pipecat](https://github.com/pipecat-ai/pipecat) (real-time voice pipeline) · [Sarvam AI](https://www.sarvam.ai/) (Saaras speech-to-text and Bulbul text-to-speech) · [Groq](https://groq.com/) (LLM inference) · [Next.js](https://nextjs.org/) · [Prisma](https://www.prisma.io/).
