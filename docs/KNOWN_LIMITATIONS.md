@@ -34,4 +34,5 @@
 ## Platform
 - SQLite for the demo. For PostgreSQL, switch the Prisma datasource and use `@prisma/adapter-pg`.
 - Sign-in is email/mobile + password with a signed cookie; there is no OTP or ABHA login.
-- The Studio voice server handles each WebRTC session in-process; scale-out (TURN servers, multiple workers) is out of scope.
+- The Studio voice server handles each session in-process (one Render instance); scale-out is out of scope.
+- **Render free plan:** both services sleep after ~15 idle minutes; the first request takes 30–60 s (the app shows "Waking the Sarvam voice service…"). The SQLite file lives on the instance disk, so accounts registered by users are lost when the web service restarts or sleeps; the sample accounts are recreated automatically. For persistent data attach a Render Disk (paid plan) — see docs/DEPLOYMENT.md.

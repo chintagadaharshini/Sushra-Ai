@@ -1,4 +1,4 @@
-pipecat-ai[sarvam,groq,webrtc,silero]==1.17.0
+pipecat-ai[sarvam,groq,webrtc,silero,websocket]==1.17.0
 fastapi>=0.115
 uvicorn[standard]>=0.30
 python-dotenv>=1.0

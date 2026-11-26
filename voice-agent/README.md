@@ -1,6 +1,7 @@
 # Sushra AI — Studio voice agent (FastAPI + Pipecat)
 
-Real-time conversation: **WebRTC → Sarvam Saaras (STT) → Groq LLM with tools → Sarvam Bulbul (TTS) → WebRTC**.
+Real-time conversation: **WebSocket → Sarvam Saaras (STT) → Groq LLM with tools → Sarvam Bulbul (TTS) → WebSocket**.
+The browser opens `wss://<agent>/ws?token=…` with a 2-minute HMAC token minted by the signed-in web app. WebSockets pass through HTTP-only hosts such as Render; the older SmallWebRTC endpoint (`/api/offer`) is kept for local setups where UDP is reachable.
 
 - `server.py`: FastAPI signalling (`POST/PATCH /api/offer`, `GET /health`), protected by `VOICE_AGENT_SHARED_SECRET`.
   Only the Next.js app calls it (through `/api/voice-agent/*`, which checks the user's session).

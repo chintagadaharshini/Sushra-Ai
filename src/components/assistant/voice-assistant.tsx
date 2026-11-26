@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, AudioLines, Check, PhoneOff, ChevronDown, Keyboard, Mic, MicOff, Send, Square, Volume2, VolumeX, X, FileText, Hospital, CalendarDays, Sparkles } from "lucide-react";
+import { AlertTriangle, AudioLines, Check, PhoneOff, ChevronDown, Keyboard, Mic, MicOff, Send, Square, Volume2, VolumeX, X, FileText, Hospital, CalendarDays, Sparkles, Loader2 } from "lucide-react";
 import { useAssistant, type ChatMessage } from "@/lib/voice/store";
 import { useAssistantEngine } from "./use-assistant-engine";
 import { useMicLevel } from "./use-mic-level";
@@ -61,8 +61,22 @@ const UI: Record<string, Record<Lang, string>> = {
     hi: "स्टूडियो आवाज़ चालू नहीं है। Sarvam और Groq कुंजियों के साथ voice-agent सेवा शुरू करें (README देखें)। ब्राउज़र आवाज़ काम करती है।",
     te: "స్టూడియో వాయిస్ నడవడం లేదు. Sarvam, Groq కీలతో voice-agent సేవను ప్రారంభించండి (README చూడండి). బ్రౌజర్ వాయిస్ పనిచేస్తుంది.",
   },
+  studioWaking: {
+    en: "Waking the Sarvam voice service (up to a minute after it has been idle)…",
+    hi: "Sarvam आवाज़ सेवा चालू हो रही है (कुछ देर निष्क्रिय रहने पर एक मिनट तक)…",
+    te: "Sarvam వాయిస్ సేవ ప్రారంభమవుతోంది (కొంతసేపు ఖాళీగా ఉంటే ఒక నిమిషం వరకు)…",
+  },
   privacy: { en: "Mic is only on while the green indicator shows. Audio is not recorded or stored.", hi: "हरा संकेत दिखने पर ही माइक चालू है। आवाज़ रिकॉर्ड या सेव नहीं होती।", te: "ఆకుపచ్చ సూచిక కనిపించినప్పుడే మైక్ ఆన్. ఆడియో రికార్డ్ లేదా సేవ్ కాదు." },
 };
+
+/** Plain-language explanation of a Studio connection failure (the raw reason is shown beside it). */
+function studioErrorText(reason: string | null) {
+  if (!reason) return "Studio voice could not connect.";
+  if (/permission|NotAllowed|denied/i.test(reason)) return "Microphone permission was blocked. Allow the mic for this site and try again.";
+  if (reason === "waking") return "The voice service is still starting. Wait a moment and try again.";
+  if (reason === "not-configured") return "The voice service is not configured on the server (VOICE_AGENT_SHARED_SECRET / VOICE_AGENT_URL).";
+  return "Studio voice could not connect.";
+}
 
 function Orb({ size = 44, active = false }: { size?: number; active?: boolean }) {
   return (
@@ -316,10 +330,15 @@ export function VoiceAssistant({ userName }: { userName: string }) {
                   </button>
                 ))}
               </div>
+              {mode === "studio" && (studio.state === "waking" || studio.state === "checking") && (
+                <p className="flex items-center gap-2 rounded-xl border border-line bg-cream p-3 text-sm text-ink-soft" role="status" data-testid="studio-waking">
+                  <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />{UI.studioWaking[lang]}
+                </p>
+              )}
               {mode === "studio" && (studio.state === "unavailable" || studio.state === "error") && (
                 <p className="flex gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-warn">
                   <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-                  <span>{UI.studioUnavailable[lang]} <span className="text-xs opacity-75">({studio.reason})</span> <button onClick={() => void studio.recheck()} className="underline cursor-pointer">Retry</button></span>
+                  <span>{studio.state === "error" ? studioErrorText(studio.reason) : UI.studioUnavailable[lang]} <span className="text-xs opacity-75" data-testid="studio-reason">({studio.reason})</span> <button onClick={() => void studio.recheck()} className="underline cursor-pointer">Retry</button></span>
                 </p>
               )}
               {mode === "studio" && studioLive && studio.audioBlocked && (
@@ -407,7 +426,7 @@ export function VoiceAssistant({ userName }: { userName: string }) {
                     onClick={() => (studioLive ? void studio.disconnect() : void studio.connect())}
                     aria-label={studioLive ? "End live voice conversation" : "Start live voice conversation"}
                     aria-pressed={studioLive}
-                    disabled={studio.state === "unavailable" || studio.state === "connecting" || studio.state === "checking"}
+                    disabled={studio.state === "unavailable" || studio.state === "connecting" || studio.state === "checking" || studio.state === "waking"}
                     className={cn("grid size-14 shrink-0 place-items-center rounded-2xl text-white transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-40", studioLive ? "bg-bad hover:bg-red-700" : "bg-brand-600 hover:bg-brand-700")}
                   >
                     {studioLive ? <PhoneOff className="size-6" /> : <AudioLines className="size-6" />}

@@ -15,6 +15,13 @@ export function verifyPassword(password: string, stored: string): boolean {
   return expected.length === candidate.length && timingSafeEqual(candidate, expected);
 }
 
+/** Why sessions cannot be signed in this environment, or null if they can. */
+export function sessionSecretProblem(): string | null {
+  const s = process.env.SESSION_SECRET;
+  if (process.env.NODE_ENV === "production" && (!s || s.length < 16)) return "SESSION_SECRET is not set (needs at least 16 characters)";
+  return null;
+}
+
 function secret(): string {
   const s = process.env.SESSION_SECRET;
   if (!s || s.length < 16) {

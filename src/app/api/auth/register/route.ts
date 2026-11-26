@@ -1,13 +1,18 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { prisma } from "@/server/db";
-import { hashPassword, signSession } from "@/server/crypto";
+import { hashPassword, sessionSecretProblem, signSession } from "@/server/crypto";
 import { SESSION_COOKIE } from "@/server/session";
 import { audit } from "@/server/audit";
 import { CITIES, registerSchema } from "@/lib/domain";
 import { newHealthId } from "@/server/ids";
 
 export async function POST(req: Request) {
+  const misconfigured = sessionSecretProblem();
+  if (misconfigured) {
+    console.error(`[auth] ${misconfigured}`);
+    return NextResponse.json({ error: "Sign-in is temporarily unavailable: the server is missing its session secret. Please contact the team.", code: "SERVER_MISCONFIGURED" }, { status: 503 });
+  }
   let input;
   try {
     input = registerSchema.parse(await req.json());

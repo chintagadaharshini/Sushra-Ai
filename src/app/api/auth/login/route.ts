@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/server/db";
-import { signSession, verifyPassword } from "@/server/crypto";
+import { sessionSecretProblem, signSession, verifyPassword } from "@/server/crypto";
 import { SESSION_COOKIE } from "@/server/session";
 import { audit } from "@/server/audit";
 import { ROLES, ROLE_LABEL, type Role } from "@/lib/domain";
@@ -15,6 +15,11 @@ const schema = z
   .strict();
 
 export async function POST(req: Request) {
+  const misconfigured = sessionSecretProblem();
+  if (misconfigured) {
+    console.error(`[auth] ${misconfigured}`);
+    return NextResponse.json({ error: "Sign-in is temporarily unavailable: the server is missing its session secret. Please contact the team.", code: "SERVER_MISCONFIGURED" }, { status: 503 });
+  }
   const body = schema.safeParse(await req.json().catch(() => null));
   if (!body.success) return NextResponse.json({ error: "Enter your email or mobile number and password." }, { status: 400 });
   const id = body.data.identifier.toLowerCase();

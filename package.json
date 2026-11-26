@@ -16,14 +16,16 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
-    "db:offline": "node scripts/apply-migrations-offline.mjs && tsx prisma/seed.ts"
+    "db:offline": "node scripts/apply-migrations-offline.mjs && tsx prisma/seed.ts",
+    "start:prod": "node scripts/render-start.mjs"
   },
   "dependencies": {
     "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
     "@fontsource/noto-sans-devanagari": "^5.3.0",
     "@fontsource/noto-sans-telugu": "^5.3.0",
-    "@pipecat-ai/client-js": "^1.16.0",
-    "@pipecat-ai/small-webrtc-transport": "^1.11.2",
+    "@pipecat-ai/client-js": "^1.18.0",
+    "@pipecat-ai/small-webrtc-transport": "^1.11.4",
+    "@pipecat-ai/websocket-transport": "^1.8.4",
     "@prisma/adapter-better-sqlite3": "^7.10.1",
     "@prisma/client": "^7.10.1",
     "better-sqlite3": "^12.11.1",

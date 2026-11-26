@@ -13,8 +13,6 @@ import struct
 from pipecat.frames.frames import OutputAudioRawFrame
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.worker import PipelineParams, PipelineWorker
-from pipecat.transports.base_transport import TransportParams
-from pipecat.transports.smallwebrtc.transport import SmallWebRTCTransport
 from pipecat.workers.runner import WorkerRunner
 
 RATE = 24000
@@ -25,9 +23,8 @@ def tone(seconds: float, hz: float = 440.0) -> bytes:
     return b"".join(struct.pack("<h", int(12000 * math.sin(2 * math.pi * hz * i / RATE))) for i in range(n))
 
 
-async def run_bot(connection, request_data):
-    transport = SmallWebRTCTransport(webrtc_connection=connection, params=TransportParams(audio_in_enabled=True, audio_out_enabled=True))
-    worker = PipelineWorker(Pipeline([transport.input(), transport.output()]), params=PipelineParams(audio_out_sample_rate=RATE))
+async def run_bot(transport, request_data):
+    worker = PipelineWorker(Pipeline([transport.input(), transport.output()]), params=PipelineParams(audio_in_sample_rate=16000, audio_out_sample_rate=RATE))
 
     @worker.rtvi.event_handler("on_client_ready")
     async def on_ready(_r):

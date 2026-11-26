@@ -85,7 +85,7 @@ All three roles use the **same voice assistant** (bottom-right button, or **Alt 
 
 ### 🎙️ Voice assistant (all roles)
 - **Browser voice** — Web Speech API (te-IN / hi-IN / en-IN) with a deterministic trilingual intent engine. **Works with no API keys.**
-- **Studio voice** — real-time WebRTC conversation through a separate Python service: **Sarvam Saaras** (speech-to-text) → **Groq** LLM with tool calling → **Sarvam Bulbul** (text-to-speech).
+- **Studio voice** — real-time conversation (audio streamed over a WebSocket, so it works on Render) through a separate Python service: **Sarvam Saaras** (speech-to-text) → **Groq** LLM with tool calling → **Sarvam Bulbul** (text-to-speech).
 - Every action follows: *speech → intent → validation → confirmation → action → verification → spoken reply*. Failure is reported honestly.
 - Remembers context across turns ("open my records" → "open the latest one" → "explain it in Telugu").
 
@@ -154,7 +154,7 @@ An extra seeded patient, `ravi@sushra.in` (`9000000002`), shares records with no
 | **App backend** | Next.js Route Handlers · Zod validation · HMAC-signed httpOnly session cookies · scrypt password hashing |
 | **Database** | Prisma 7 ORM · SQLite (via `better-sqlite3` adapter) — schema portable to PostgreSQL |
 | **Browser voice** | Web Speech API (speech recognition + synthesis) · deterministic Telugu/Hindi/English intent engine |
-| **Studio voice agent** | Python · FastAPI · Uvicorn · Pipecat 1.17 · SmallWebRTC transport · Silero VAD · Sarvam AI Saaras (STT) & Bulbul (TTS) · Groq LLM with tool calling |
+| **Studio voice agent** | Python · FastAPI · Uvicorn · Pipecat 1.17 · WebSocket transport (SmallWebRTC for local use) · Silero VAD · Sarvam AI Saaras (STT) & Bulbul (TTS) · Groq LLM with tool calling |
 | **Optional LLM fallback** | Anthropic API (server-side only) for unusual phrasings and AI-worded explanations, after user consent |
 | **Interoperability** | HL7 FHIR R4 Bundle export · ABDM provider interfaces (local provider + sandbox stub) |
 | **Testing** | Vitest · Playwright · pytest |
@@ -198,8 +198,8 @@ flowchart LR
     UI -->|HTTPS| API
     VA -->|API calls| API
     ABDM --> DB
-    UI -->|WebRTC offer| PROXY -->|shared secret| FAST
-    BOT <-->|WebRTC audio + data channel| VA
+    UI -->|session token request| PROXY -->|HMAC-signed token| VA
+    VA <-->|WebSocket: audio + RTVI messages, token-checked| FAST
     BOT <--> SARVAM
     BOT <--> GROQ
     API -.->|only if key set + consent| ANTH
@@ -208,7 +208,7 @@ flowchart LR
 **How it fits together**
 - The **Next.js app** serves the UI and all APIs. Every record query is scoped to the signed-in patient, or to a doctor/ASHA worker who holds an active consent from that patient (`src/server/care.ts`).
 - **Browser voice** runs entirely in the browser and the Next.js app — no keys needed.
-- **Studio voice** is a separate Python service. The Pipecat bot **never touches patient data**: each LLM tool call is validated in Python (`voice-agent/actions.py`), sent over the WebRTC data channel to the signed-in browser, executed by the **same** guarded executor (`src/lib/voice/executor.ts`), and the verified result is spoken back.
+- **Studio voice** is a separate Python service. The Pipecat bot **never touches patient data**: each LLM tool call is validated in Python (`voice-agent/actions.py`), sent as an RTVI message over the WebSocket to the signed-in browser, executed by the **same** guarded executor (`src/lib/voice/executor.ts`), and the verified result is spoken back.
 - The voice agent is reachable only through the authenticated Next.js proxy, protected by a shared secret.
 
 ---
@@ -278,7 +278,7 @@ Copy the provided templates — **never commit your real `.env` files** (they ar
 | `ANTHROPIC_API_KEY`, `LLM_MODEL` | optional | LLM fallback for unusual phrasings and AI-worded explanations (consent-gated, server-side only) |
 | `VOICE_AGENT_URL` | optional | Studio voice agent address. Default `http://127.0.0.1:7860` |
 | `VOICE_AGENT_SHARED_SECRET` | optional | Must equal the same variable in `voice-agent/.env` |
-| `NEXT_PUBLIC_PIPECAT_MEDIA_MANAGER` | optional | `local` uses a WebAudio player instead of the default WebRTC device manager |
+| `NEXT_PUBLIC_PIPECAT_MEDIA_MANAGER` | optional | `daily` uses Daily's device manager instead of the default WebAudio recorder/player |
 
 ### Voice agent — `voice-agent/.env` (from `voice-agent/.env.example`)
 
@@ -293,8 +293,8 @@ Copy the provided templates — **never commit your real `.env` files** (they ar
 | `HOST`, `PORT` | optional | Default `127.0.0.1` and `7860` |
 
 ### Dependencies
-- **Web app:** declared in `package.json` (installed with `npm install`). Key packages: `next`, `react`, `@prisma/client`, `@prisma/adapter-better-sqlite3`, `better-sqlite3`, `zod`, `@pipecat-ai/client-js`, `@pipecat-ai/small-webrtc-transport`.
-- **Voice agent:** declared in `voice-agent/requirements.txt` — `pipecat-ai[sarvam,groq,webrtc,silero]==1.17.0`, `fastapi`, `uvicorn`, `python-dotenv`, `pydantic`, `pytest`, `pytest-asyncio`.
+- **Web app:** declared in `package.json` (installed with `npm install`). Key packages: `next`, `react`, `@prisma/client`, `@prisma/adapter-better-sqlite3`, `better-sqlite3`, `zod`, `@pipecat-ai/client-js`, `@pipecat-ai/websocket-transport`.
+- **Voice agent:** declared in `voice-agent/requirements.txt` — `pipecat-ai[sarvam,groq,webrtc,silero,websocket]==1.17.0`, `fastapi`, `uvicorn`, `python-dotenv`, `pydantic`, `pytest`, `pytest-asyncio`.
 
 ---
 
@@ -360,7 +360,7 @@ cd voice-agent; pytest -q  # Python tool-validation tests
 
 ### Current limitations
 - **ABDM / ABHA:** there is **no live ABDM connectivity**. `DATA_MODE=abdm_sandbox` switches to a stub (`src/server/abdm/sandbox-provider.ts`) that refuses safely; no ABDM endpoints are called. In-app sharing consents are not ABDM consent artefacts. See [docs/ABDM_INTEGRATION.md](docs/ABDM_INTEGRATION.md) for the plan.
-- **Live Sarvam/Groq calls** were not verified in the build environment (no keys); the WebRTC transport and tool bridge were tested with a loopback bot.
+- **Live Sarvam/Groq calls** were not verified in the build environment (no keys); the WebSocket transport, audio playback and tool bridge are tested end-to-end with loopback bots (`e2e/studio-audio.spec.ts`). Deployment and verification steps: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 - Browser voice depends on the browser's speech service (best in Chrome/Edge; none in Firefox). Telugu speech output needs a Telugu voice on the device — often missing on Windows — unless the Studio voice service is running.
 - Language is selected explicitly (EN / हिं / తె); automatic language detection is not enabled.
 - Doctor registration numbers are not checked against a medical council; ASHA IDs are self-declared. No OTP login, account verification or password reset.

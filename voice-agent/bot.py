@@ -1,7 +1,9 @@
 """Sushra AI real-time voice agent (Pipecat).
 
-Pipeline: WebRTC mic -> Sarvam Saaras STT -> Groq LLM (tool calling) -> Sarvam Bulbul TTS -> WebRTC speaker.
-Tools are executed in the user's signed-in browser via the RTVI data channel (see actions.py).
+Pipeline: mic -> Sarvam Saaras STT -> Groq LLM (tool calling) -> Sarvam Bulbul TTS -> speaker.
+The transport is either a WebSocket (default; works behind HTTP-only hosts like Render) or
+SmallWebRTC (local/self-hosted). Tools run in the user's signed-in browser via RTVI messages
+(see actions.py).
 """
 
 from __future__ import annotations
@@ -24,9 +26,7 @@ from pipecat.services.llm_service import FunctionCallParams
 from pipecat.services.sarvam.stt import SarvamSTTService
 from pipecat.services.sarvam.tts import SarvamTTSService
 from pipecat.transcriptions.language import Language
-from pipecat.transports.base_transport import TransportParams
-from pipecat.transports.smallwebrtc.connection import SmallWebRTCConnection
-from pipecat.transports.smallwebrtc.transport import SmallWebRTCTransport
+from pipecat.transports.base_transport import BaseTransport
 from pipecat.turns.user_mute.always_user_mute_strategy import AlwaysUserMuteStrategy
 from pipecat.turns.user_mute.function_call_user_mute_strategy import FunctionCallUserMuteStrategy
 from pipecat.turns.user_mute.mute_until_first_bot_complete_user_mute_strategy import MuteUntilFirstBotCompleteUserMuteStrategy
@@ -34,6 +34,7 @@ from pipecat.workers.runner import WorkerRunner
 
 from actions import TOOL_SPECS, ActionBridge, ActionError, tool_to_action
 from prompts import GREETING, system_prompt
+from transports import IN_RATE, OUT_RATE
 
 LANGUAGE = {"en": Language.EN_IN, "hi": Language.HI_IN, "te": Language.TE_IN}
 
@@ -66,17 +67,12 @@ def build_tools() -> ToolsSchema:
     )
 
 
-async def run_bot(connection: SmallWebRTCConnection, request_data: dict[str, Any] | None) -> None:
+async def run_bot(transport: BaseTransport, request_data: dict[str, Any] | None) -> None:
     data = request_data or {}
     lang = data.get("lang") if data.get("lang") in LANGUAGE else "en"
     first_name = str(data.get("firstName") or "")[:40]
     role = data.get("role") if data.get("role") in ("PATIENT", "DOCTOR", "ASHA") else "PATIENT"
-    logger.info(f"Starting voice session (lang={lang})")  # never log transcripts or health data
-
-    transport = SmallWebRTCTransport(
-        webrtc_connection=connection,
-        params=TransportParams(audio_in_enabled=True, audio_out_enabled=True),
-    )
+    logger.info(f"Starting voice session (lang={lang}, transport={type(transport).__name__})")  # never log transcripts or health data
 
     stt_model = os.getenv("STT_MODEL", "saaras:v4")
     stt = SarvamSTTService(
@@ -102,7 +98,7 @@ async def run_bot(connection: SmallWebRTCConnection, request_data: dict[str, Any
     )
 
     pipeline = Pipeline([transport.input(), stt, user_aggregator, llm, tts, transport.output(), assistant_aggregator])
-    worker = PipelineWorker(pipeline, params=PipelineParams(enable_metrics=False))
+    worker = PipelineWorker(pipeline, params=PipelineParams(enable_metrics=False, audio_in_sample_rate=IN_RATE, audio_out_sample_rate=OUT_RATE))
     rtvi = worker.rtvi
 
     bridge = ActionBridge(send=rtvi.send_server_message)

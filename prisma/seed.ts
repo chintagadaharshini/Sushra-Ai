@@ -50,8 +50,10 @@ export async function seed(url = process.env.DATABASE_URL ?? "file:./dev.db") {
     const fac = (name: string) => facilities.find((f) => f.name.startsWith(name))!;
 
     // ---------- Users ----------
+    // Fixed IDs: a signed-in demo session stays valid if the server restarts and re-seeds.
     const lakshmi = await prisma.user.create({
       data: {
+        id: "demo-patient-lakshmi",
         email: "lakshmi@sushra.in",
         phone: "9000000001",
         role: "PATIENT",
@@ -75,6 +77,7 @@ export async function seed(url = process.env.DATABASE_URL ?? "file:./dev.db") {
     });
     const ravi = await prisma.user.create({
       data: {
+        id: "demo-patient-ravi",
         email: "ravi@sushra.in",
         phone: "9000000002",
         role: "PATIENT",
@@ -275,6 +278,7 @@ export async function seed(url = process.env.DATABASE_URL ?? "file:./dev.db") {
     // ---------- Care team ----------
     const doctor = await prisma.user.create({
       data: {
+        id: "demo-doctor-srinivas",
         role: "DOCTOR", email: "dr.srinivas@sushra.in", phone: "9000000003", displayName: "Dr. Srinivas", passwordHash: hashPassword(SEED_PASSWORD),
         doctorProfile: { create: { fullName: "Dr. A. Srinivas", registrationNumber: "APMC/2009/45123", specialization: "General Medicine", facilityName: "Krishna River Hospital", city: "Vijayawada", verificationStatus: "VERIFIED" } },
         preferences: { create: { preferredLanguage: "en", city: "Vijayawada" } },
@@ -282,6 +286,7 @@ export async function seed(url = process.env.DATABASE_URL ?? "file:./dev.db") {
     });
     const asha = await prisma.user.create({
       data: {
+        id: "demo-asha-padma",
         role: "ASHA", email: "padma.asha@sushra.in", phone: "9000000004", displayName: "Padma", passwordHash: hashPassword(SEED_PASSWORD),
         ashaProfile: { create: { fullName: "Padma Kumari", ashaId: "AP-NTR-0457", village: "Gollapudi", district: "Vijayawada", phcName: "Gollapudi Primary Health Centre" } },
         preferences: { create: { preferredLanguage: "te", city: "Vijayawada" } },

@@ -8,5 +8,5 @@ const schema = z.object({ text: z.string().min(1).max(3000), lang: z.enum(LANGS)
 
 export const POST = withAuth(async (req) => {
   const body = schema.parse(await req.json());
-  return forwardToAgent("/tts", { method: "POST", body: JSON.stringify(body), timeoutMs: 30000 });
+  return forwardToAgent("/tts", { method: "POST", body: JSON.stringify(body), timeoutMs: 75000 });
 });

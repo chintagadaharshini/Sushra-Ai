@@ -13,8 +13,6 @@ import os
 
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.worker import PipelineParams, PipelineWorker
-from pipecat.transports.base_transport import TransportParams
-from pipecat.transports.smallwebrtc.transport import SmallWebRTCTransport
 from pipecat.workers.runner import WorkerRunner
 
 from actions import ActionBridge, tool_to_action
@@ -29,9 +27,8 @@ SCRIPT = [
 ]
 
 
-async def run_bot(connection, request_data):
-    transport = SmallWebRTCTransport(webrtc_connection=connection, params=TransportParams(audio_in_enabled=True, audio_out_enabled=True))
-    worker = PipelineWorker(Pipeline([transport.input(), transport.output()]), params=PipelineParams())
+async def run_bot(transport, request_data):
+    worker = PipelineWorker(Pipeline([transport.input(), transport.output()]), params=PipelineParams(audio_in_sample_rate=16000, audio_out_sample_rate=24000))
     bridge = ActionBridge(send=worker.rtvi.send_server_message, timeout=15)
     log_path = os.getenv("SV_LOOPBACK_LOG", "/tmp/sv-loopback.json")
     results = {"request_data": request_data, "steps": []}
